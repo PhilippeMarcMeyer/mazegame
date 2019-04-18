@@ -1,0 +1,2621 @@
+
+<!-- saved from url=(0058)http://p5.storage.canalblog.com/55/24/968584/77842598.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Vivarium</title>
+<style>
+
+#info {
+visibility:visible;
+position: absolute;
+left: 0px;
+top: 0px;
+background-color:#b6cb39;
+color:black;
+text-align:center;
+font-size: 12px;
+font-family:Arial,Verdana,Tahoma,Lucida Grande;
+border:1px solid black; margin:1px;
+}
+
+#universe {
+position: absolute;
+left: 0px;
+top: 39px;
+background-color:white;
+border:1px solid black; margin:1px;
+
+}
+
+#off {
+
+position: absolute;
+left: 0px;
+top: 39px;
+visibility: hidden;
+}
+
+
+</style>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<script>
+
+
+// Declarations
+var antState;
+var iphone_3GS;
+var scrw,w2;
+var scrh,h2;
+var low;
+var focal;
+var homeSize;
+var islandh;
+var step;
+var nbMobs;
+var islandy;
+var grassSpacing;
+var gameSpeed;
+var maxMobsDrawn;
+var mobsDrawn;
+var vcanvas,vcanOff;
+var ctx,ctxOff;
+var home;
+var running;
+var vPi;
+var s4;
+var hBottom,hTop,hLeft,hRight,camPt,camDir;
+var maxMeals;
+var huntMeals;
+var lastCpt;
+var growingSpeed;
+var growReStart;
+var foodAmount;
+var matingChance;
+var animChance;
+var animLength;
+var animCount;
+var matingAge;
+var popIso;
+var mobDeaths;
+var mobBirth;
+var turns;
+var timer;
+var mobCpt;
+var mobFemales;
+var lastFemaleNr;
+var lastMaleNr;
+var centerCall;
+var centerPoint;
+var geneMulti;
+var ground;
+var nrGenes;
+var antSize;
+var antKills;
+var youngs;
+var antNr;
+var lastMsg;
+var testLocalStorage;
+var units4aphid;
+var arrFateNr;
+var arrFate;
+var antAttack;
+var flyCpt;
+var BugSight;
+var BugPower;
+var AntPower;
+var BugLife;
+var treeSize;
+var yCam;
+var yFactor;
+var landScape;
+var nbFrames;
+//--------------Usefull Funtions -------
+
+
+function myFloor(n){
+var i;
+i= n << 0;
+return i;
+}
+
+//---- sorting mobs to draw faraway first
+function sortMobs(a,b){
+return b.pos.z - a.pos.z;
+}
+
+//---- random function
+function rand(n){
+return myFloor((Math.random()*n)+0.49);
+}
+
+//---- Points 2D
+function Point2D(x,y){
+this.x=x;
+this.y=y;
+}
+
+//---- Vector 3D
+function vector(x,y,z){
+this.x=x;
+this.y=y;
+this.z=z;
+}
+
+//---- Points 2D + radius
+function PtRadius(x,y,r){
+this.x=x;
+this.y=y;
+this.r=r;
+}
+
+//---- Calculates length of the vector
+function vectorLength(v){
+vLen=Math.sqrt((v.x*v.x+v.y*v.y+v.z*v.z));
+return vLen
+}
+
+//---- Points 3D
+function Point3D(x,y,z){
+this.x=x;
+this.y=y;
+this.z=z;
+}
+
+//---- Points 3D flatened to 2D
+// for screen drawing
+function pt3Dto2D(pt){
+var hSoil=h2;
+var wSoil=w2;
+x=pt.x;
+y=pt.y;
+z=pt.z;
+if(true)
+{
+var scale=(focal/(focal+z));
+x=x*scale;
+y=y*scale;
+x=x+wSoil;
+y=hSoil-y;
+x=myFloor(x);
+y=myFloor(y);
+pt2=new Point2D(x,y);
+}
+else pt2=new Point2D(-1,-1)
+return pt2;
+}
+
+//---- Points 3D flatened to 2D for screen
+// drawing with radius scaling
+function pt3Dto2DR(pt,r){
+var hSoil=h2;
+var wSoil=w2*yFactor;
+var x=pt.x;
+var y=pt.y;
+var z=pt.z;
+if(z+yCam>=0)
+{
+var scale=(focal/(focal+z))*yFactor;
+x=myFloor((x*scale)+wSoil);
+y=myFloor(hSoil-(y*scale));
+r=r*scale;
+pt2r=new PtRadius(x,y,r);
+}
+else pt2r=new Point2D(-1,-1,1)
+return pt2r;
+}
+
+//--- Image utility
+
+// Converts canvas to an image
+function convertCanvasToImage(canvas) {
+landScape = new Image();
+landScape.src = canvas.toDataURL("image/png");
+}
+
+function copyImage(image,ctx2,left2,top2)
+{
+
+ctx2.save();
+ctx2.scale(yFactor,yFactor);
+ctx2.drawImage(image,left2-xd,top2-xd);
+ctx2.restore();
+}
+
+//-- direct copy from off to screen
+function copy(ctx1,w1,h1,ctx2,left2,top2)
+{
+//var dataSrc = ctx1.getImageData(0,0,w1,h1);
+//ctx2.putImageData(dataSrc,left2,top2);
+largeImg=scrw*yFactor;
+xd=myFloor((largeImg-scrw)/2);
+ctx2.save();
+ctx2.scale(yFactor,yFactor);
+ctx2.drawImage(landScape,left2-xd,top2-xd,scrw,scrh);
+ctx2.restore();
+}
+
+//--------can Copy part from offscreen ctx to
+//screen ctx to white color (for further us)
+function copyP(ctx1,w1,h1,ctx2,left2,top2,scale)
+{
+var dataDest = ctx2.getImageData(left2, top2,w1,h1);
+var dataSrc = ctx1.getImageData(0,0,w1,h1);
+
+var pixelsSrc = dataSrc.data;
+var pixelsDest = dataDest.data;
+var numPixels = dataSrc.width * dataSrc.height;
+
+for (var i = 0; i < numPixels; i++) {
+doDraw=((pixelsSrc[i*4]+pixelsSrc[i*4+1]+pixelsSrc[i*4+2])<750);
+if(doDraw){
+pixelsDest[i*4] = pixelsSrc[i*4]; // Red
+pixelsDest[i*4+1] = pixelsSrc[i*4+1]; // Green
+pixelsDest[i*4+2] = pixelsSrc[i*4+2]; // Blue
+}}
+ctx2.putImageData(dataDest,left2,top2);
+}
+
+
+
+// For further use
+function rotateY(pt,ry)
+{
+var vDeg2Rad=vPi/180;
+ry=ry*vDeg2Rad;
+pt.z=pt.z-homeSize/2;
+newz=-pt.x*Math.sin(ry) + pt.z*Math.cos(ry);
+pt.x= pt.x*Math.cos(ry) + pt.z*Math.sin(ry);
+pt.z=newz+homeSize/2;
+return(pt);
+}
+
+//--- distance in pixel between 2 3Dpoints
+function distance(A,B) {
+x=A.x-B.x;
+y=A.y-B.y;
+z=A.z-B.z;
+var dist=Math.sqrt(x*x+y*y+z+z);
+return myFloor(dist);
+}
+
+function distance2D(A,B) {
+x=A.x-B.x;
+y=A.y-B.y;
+var dist=Math.sqrt(x*x+y*y);
+return myFloor(dist);
+}
+
+// Drawing utilities
+//-------------------------------
+function drawCircle(ctx,x,y,s,nrPts,r,g,b,trans,startAng,totAng) {
+//var vPi=Math.PI;
+var pace=(totAng/nrPts);
+ctx.fillStyle ="rgba("+r+","+g+","+b+","+trans +")";
+ctx.beginPath();
+
+xPt=myFloor(x+Math.sin(startAng)*s);
+yPt=myFloor(y+Math.cos(startAng)*s);
+
+ctx.moveTo(xPt, yPt);
+for(var i=0;i<=nrPts;i++){
+var z=rand(1);
+xPt=myFloor(x+Math.sin((pace*i)+startAng)*s)+z;
+yPt=myFloor(y+Math.cos((pace*i)+startAng)*s)+z;
+ctx.lineTo(xPt,yPt);
+}
+ctx.closePath();
+ctx.fill();
+}
+
+function drawMeAflyingBug(ctx,x,y,s,r,g,b,dx,dz,gen,name,state)
+{
+vlen=Math.sqrt(dx*dx+dz*dz);
+if(vlen<1){
+vlen=1;
+dx=0;
+dz=-1;
+}
+dx=myFloor((dx/vlen)*s);//should be half circus
+s2=s*.8;
+s3=s/4;
+s5=s/6;
+
+sdot=s*.6;
+wingsw=s*2.5;
+wingsh=s/6;
+trans=1;
+ctx.save();//----------------
+rotZ=(rand(6)-3)/10;
+ctx.rotate(rotZ);
+if(gen==-1)ctx.globalAlpha=0.2;
+ctx.lineWidth=.1;
+
+for (var i = -2; i<3; i++)    {
+a=i*wingsh;
+ctx.stokeStyle = "rgba(252,124,0,0.9";
+ctx.beginPath();
+ctx.moveTo(x-wingsw-dx+Math.abs(a),y+a);
+ctx.lineTo(x+wingsw-dx-Math.abs(a),y-a);
+ctx.closePath();
+ctx.stroke();
+}
+simpleEllipse(ctx,x-wingsw-dx,y,s,"rgba(127,225,230,0.4)",2,.2,0);
+simpleEllipse(ctx,x+wingsw+dx,y,s,"rgba(127,225,230,0.4)",2,.2,0);
+
+niceArc(ctx,x,y,s,r,g,b);
+if(dz<0){
+drawEye(ctx,x-s3-1,y-1,s3,s,"white","black",dx,false);
+drawEye(ctx,x+s3+1,y-1,s3,s,"white","black",dx,true);
+}
+// dots to improve
+simpleEllipse(ctx,x-sdot,y-sdot,s5,"black",.7,1,.8);
+simpleEllipse(ctx,x,y-s2,s5,"black",.7,1,1.6);
+simpleEllipse(ctx,x+sdot,y-sdot,s5,"black",.7,1,2.4);
+ctx.font="12pt Arial";
+ctx.fillStyle="black";
+if(name!="")ctx.fillText(name+" "+gen,x,y-20);
+ctx.restore();
+}
+
+function drawEye(ctx,x,y,s,face,c,c1,dx,isLeft){
+xEyeOff=0;
+yEyeOff=0;
+if(dx>0) xEyeOff=1;
+if(dx<0) xEyeOff=-1;
+if(s<1)s=1;
+//sw,sh,r
+var s2=s/2;
+var s3=s/3;
+var dxAbs=Math.abs(dx)
+var doDraw=true;
+//size relies on distance to center
+if(isLeft)
+{
+doDraw=(dx<=(face/1.75));
+if(dx>=0)
+sw=1-(dxAbs/face);
+else
+sw=1-((s3-dxAbs)/face);
+
+}
+else
+{
+doDraw=(dx>=-(face/1.7));
+if(dx <=0)
+sw=1-(dxAbs/face);
+else
+sw=1-((s3-dxAbs)/face);
+}
+if(sw > 1) sw=1;
+//doDraw=true;
+if(doDraw){
+dx=myFloor(dx);
+x+=dx;
+r=(dx/face)*-1;
+sh=1;
+ctx.save();
+ctx.translate(x,y);
+ctx.rotate(r);
+ctx.scale(sw,sh);
+ctx.lineWidth= 1;
+
+ctx.fillStyle =c;
+ctx.beginPath();
+ctx.arc(0,0,s,vPi*2,0,false);
+ctx.closePath();
+ctx.fill();
+
+
+ctx.fillStyle =c1;
+ctx.beginPath();
+ctx.arc(xEyeOff,yEyeOff,s2,vPi*2,0,false);
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
+
+ctx.restore();
+}
+}
+
+function simpleEllipse(ctx,x,y,s,c,sw,sh,r){
+if(s<1)s=1;
+ctx.save();
+ctx.translate(x,y);
+ctx.rotate(r);
+ctx.scale(sw,sh);
+ctx.lineWidth= 1;
+ctx.fillStyle =c;
+ctx.beginPath();
+ctx.arc(0,0,s,vPi*2,0,false);
+ctx.closePath();
+ctx.fill();
+ctx.restore();
+}
+
+
+//--------- drawing a sphere un volume
+function sphere(ctx,x,y,s,r,g,b,trans){
+if(low) simpleSphere(ctx,x,y,s,r,g,b,trans);
+else{
+ctx.lineWidth= 1;
+for (var a = s; a>1; a-=1)    {
+r+=3;g+=3;b+=3;
+ctx.fillStyle ="rgba("+r+","+g+","+b+","+trans +")";
+ctx.beginPath();
+if(a<1)a=1;
+ctx.arc(x,y,a,vPi*2,0,false);
+ctx.closePath();
+ctx.fill();
+}
+}
+}
+//-------------------------------
+
+//--------- drawing 1 plain circle
+function simpleSphere(ctx,x,y,s,r,g,b,trans){
+if(s<1)s=1;
+ctx.lineWidth= 1;
+ctx.fillStyle ="rgba("+r+","+g+","+b+","+trans +")";
+ctx.beginPath();
+ctx.arc(x,y,s,vPi*2,0,false);
+ctx.closePath();
+ctx.fill();
+}
+//-------------------------------
+
+function bell3(x,y,s,c){
+up=2*s;
+down=s/5;
+if (s<1)s=1;
+pace=s/1.2;
+ctx.beginPath();
+ctx.arc(x,y,s,vPi,0,false);
+ctx.strokeStyle="black";
+ctx.moveTo(x-s,y);
+ctx.quadraticCurveTo(x,y+down,x+s,y);
+ctx.closePath();
+ctx.fillStyle=c;
+ctx.stroke();
+ctx.fill();
+}
+
+
+//-----Not a sphere but a semi-sphere
+// for the ladybugs
+function niceArc(ctx,x,y,s,r,g,b){
+var vPi=Math.PI;
+if(low){
+var c="rgb("+r+","+g+","+b+")";
+bell3(x,y,s,c);
+}
+else{
+var pace=1;
+if(s>20)pace=2;
+//ctx,x,y,s,nrPts,r,g,b,trans,startAng,totAng
+drawCircle(ctx,x,y,(s+2),16,r,g,b,.7,.5*vPi,vPi);
+//ctx,x,y,s,r,g,b
+ctx.lineWidth= pace;
+ctx.beginPath();
+for (var a = s; a>1; a-=pace)    {
+r+=3;g+=3;b+=3;
+ctx.fillStyle ="rgb("+r+","+g+","+b+")";
+ctx.beginPath();
+if(a<1)a=1;
+ctx.arc(x,y,a,vPi-.3,.3,false);
+ctx.closePath();
+ctx.fill();
+}
+ctx.closePath();
+}
+}
+//-------------------------------
+
+function tree(s,ctx,w2,h2){
+//completely inspired by Alex Cruikshank
+this.s=s;
+this.baseWidth=s;
+this.PARTS =
+['TRUNK','BOUGH','BRANCH','LIMB','BRANCHLET','TWIG','STEM','eaf','leaf'];
+this.WOOD_COLOR = 'rgba(46,30,10,.9)';
+this.LEAF_COLOR = 'rgba(66,166,10,.5)';
+this.MIN_SCALE = .4;
+this.MAX_SCALE=.8;
+this.MIN_LEAF_SCALE=6;
+this.MAX_LEAF_SCALE=6;
+this.ROTATION=vPi/5;
+this.DTHETA=vPi/16;
+this.LEFT_OFFSET=0;
+this.TOP_OFFSET=0;
+this.linew=myFloor(0.5+this.baseWidth/8);
+this.linew2=myFloor(this.linew);
+this.tree = {type:0,scale:1,theta:0};
+
+this.rnd_between=function(s,e)
+{ return s + (e-s)*Math.random(); }
+
+this.gen_tree=function(index)
+{
+if ( ! this.PARTS[index] ) return null;
+var mins = this.PARTS[index]=='leaf' ? this.MIN_LEAF_SCALE : this.MIN_SCALE;
+var maxs = this.PARTS[index]=='leaf' ? this.MAX_LEAF_SCALE : this.MAX_SCALE;
+return [{type:index, scale:this.rnd_between(mins,maxs),
+theta:this.rnd_between(this.ROTATION-this.DTHETA,this.ROTATION+this.DTHETA),
+branches:this.gen_tree(index+1) },
+{type:index, scale:this.rnd_between(mins,maxs),
+theta:this.rnd_between(-this.ROTATION-this.DTHETA,-this.ROTATION+this.DTHETA),
+branches:this.gen_tree(index+1) }];
+}
+
+this.draw=function() {
+ctx.save();
+
+tree.branches = this.gen_tree(1);
+ctx.lineWidth = this.linew;
+ctx.translate(w2, h2);
+ctx.rotate( -vPi/2 );
+this.draw_branch( ctx, tree );
+ctx.restore();
+}
+
+this.draw_branch=function(ctx, branch) {
+ctx.strokeStyle = branch.branches ? this.WOOD_COLOR : this.LEAF_COLOR;
+this.baseWidth = branch.branches ?   s : s/2;
+
+ctx.lineWidth = this.linew;
+ctx.beginPath();
+ctx.moveTo(0,this.TOP_OFFSET);
+ctx.lineTo(this.LEFT_OFFSET+this.baseWidth,this.TOP_OFFSET);
+ctx.lineCap = "round";
+ctx.closePath();
+ctx.stroke();
+if (! branch.branches ) return;
+for ( var i=0,b; b=branch.branches[i]; i++ ) {
+ctx.save();
+ctx.translate(this.baseWidth + this.LEFT_OFFSET, 0);
+ctx.scale( b.scale, b.scale );
+ctx.rotate( b.theta );
+this.draw_branch(ctx, b);
+ctx.restore();
+}
+}
+}
+
+//-------------------- Drawing mobs
+
+//----- Ant warriors
+function drawMeAnAnt(body,dir,s,f,state){
+if(body.z+yCam>=0)
+{
+var hSoil=scrh*yFactor;
+var wSoil=w2*yFactor;
+s2=s/2;
+vl=vectorLength(dir);
+if(vl==0){vl=1;dir.z=1;}
+x=dir.x/vl;
+y=dir.y/vl;
+z=dir.z/vl;
+
+head=new Point3D(body.x+(x*s2), body.y+(y*s2), body.z+(z*s2));
+tail=new Point3D(body.x-(x*s2), body.y-(y*s2), body.z-(z*s2));
+
+scaleHead=(f/(f+head.z))*yFactor;
+scaleTail=(f/(f+tail.z))*yFactor;
+scaleBody=(f/(f+body.z))*yFactor;
+
+xh= scaleHead*head.x;
+yh= scaleHead*head.z+(y*s2);
+
+xt= scaleTail*tail.x;
+yt= scaleTail*tail.z-(y*s2);
+
+xb= scaleBody*body.x;
+yb= scaleBody*body.z;
+
+xt = xt +wSoil;
+yt = hSoil-yt;
+xt =myFloor(xt+.5);
+yt =myFloor(yt+.5);
+
+xh = xh +wSoil;
+yh = hSoil-yh;
+xh =myFloor(xh+.5);
+yh =myFloor(yh+.5);
+
+xb = xb +wSoil;
+yb = hSoil-yb;
+xb =myFloor(xb+.5);
+yb =myFloor(yb+.5);
+
+
+dx1=(xh-xt);
+dx=dx1*1.8;
+dy1=(yh-yt);
+dy=dy1*1.8;
+dy1abs=Math.abs(dy);
+
+rt=.3*s*scaleTail;
+rh=.3*s*scaleHead;
+rb=.3*s*scaleBody;
+
+ctx.save();
+if(state=="dead")ctx.globalAlpha=0.2;
+
+ctx.fillStyle = "black";
+ctx.beginPath();
+ctx.moveTo(xt,yt);
+ctx.lineTo(xt+dx-rh,yt+dy);
+ctx.moveTo(xt,yt);
+ctx.lineTo(xt+dx+rh,yt+dy);
+
+ctx.closePath();
+ctx.stroke();
+
+if(rt<rh){
+sphere(ctx,xt,yt,rt,25,25,25,1);
+sphere(ctx,xb,yb,rb,25,25,25,1);
+sphere(ctx,xh,yh,rh,218,0,0,1);}
+else{
+sphere(ctx,xh,yh,rh,218,0,0,1);
+sphere(ctx,xb,yb,rb,25,25,25,1);
+sphere(ctx,xt,yt,rt,25,25,25,1);
+}
+ctx.restore();
+}
+}
+//-------------------------------
+
+//------Drawing Aphids (pucerons in french)
+function drawMeAphids(ctx,x,y,c,h,s){
+var r=2*s;
+if(h>0)nrDots=1;//speed!
+i=0;
+while (i<= nrDots){
+simpleSphere(ctx,x,y+i,r,30,30,30,.7)
+i++;
+}
+}
+//------Drawing butterflys
+function drawMeAButterfly(x,y,rx,ry,c1,c2,s)
+{
+var i = 1;
+var s2=s/3;
+ctx.lineWidth = 0.5;
+ctx.strokeStyle = c1;
+ctx.fillStyle = c2;
+while (i<=s){
+ctx.beginPath();
+ctx.moveTo(x,y);
+ctx.bezierCurveTo(x,y,x+(rx*i),y-(ry*i),x+rand(i*7),y-0.9*(ry*i));
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
+if(low)i+=2;
+else
+i++;
+}
+ctx.moveTo(x-s2*rx,y+s2*ry);
+ctx.lineTo(x+s2*rx,y-s2*ry);
+ctx.moveTo(x-s2*rx,y+s2*ry);
+ctx.lineTo(-1+x+s2*rx,-1+y-s2*ry);
+ctx.stroke();
+}
+//-------------------------------
+
+//------Drawing a flower, just for fun
+function drawMeAFlower(ctx,x,y,rx,h,c,c1,c2,s)
+{
+var i = 1;
+ctx.lineWidth = 1;
+hgrass=1+s*2;
+hflower=s*0.3;
+
+
+ctx.strokeStyle = c;
+ctx.fillStyle = c;
+ctx.beginPath();
+ctx.moveTo(x,y);
+ctx.lineTo(x,y-hgrass);
+ctx.closePath();
+ctx.stroke();
+
+ctx.strokeStyle = c1;
+ctx.fillStyle = c2;
+y-=hgrass;
+s=myFloor(hflower)+1;
+
+while (i<=s){
+ctx.beginPath();
+ctx.moveTo(x,y);
+ctx.bezierCurveTo(x,y,x+(rx*i),y-(h*i),x+rand(i*2),y-0.8*(h*i)) ;
+ctx.bezierCurveTo(x,y,x-(rx*i),y+-(h*i),x+rand(i*2),y-0.8*(h*i)) ;
+ctx.closePath();
+
+ctx.stroke();
+ctx.fill();
+if(low)i+=2;
+else
+i++;
+}
+}
+//-------------------------------
+
+//-------Drawing grass where aphids lives
+function drawMeAGrass(ctx,x,y,rx,h,c,s)
+{
+hgrass=s*1.4;
+ctx.strokeStyle = "rgba(109,240,0,0.5)";
+ctx.fillStyle = "rgba(218,240,0,0.5)";
+ctx.beginPath();
+ctx.moveTo(x,y);
+ctx.lineTo(x-rx,y-hgrass);
+ctx.lineTo(x+rx,y-hgrass);
+ctx.closePath();
+ctx.stroke();
+ctx.fill();
+
+var d = 1;
+ctx.lineWidth = 1;
+ctx.fillStyle = "rgba(218,218,0,0.1)";
+ctx.strokeStyle = c;
+if(s>3)
+{
+while (d<=s){
+ctx.beginPath();
+ctx.moveTo(x,y);
+ctx.bezierCurveTo(x,y,x+(rx*d),y-(h*d),x+rand(d*2),y-0.8*(h*d)) ;
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
+if(low)d+=3;
+else
+d++;
+}}
+
+}
+//-------------------------------
+
+// -----Drawing a Bug
+function drawMeABug(ctx,x,y,s,rx,rz,c1,r,g,b,c2,gen,quality,name,state){
+ctx.font="20pt Arial";
+ctx.strokeStyle=c2;
+ctx.lineWidth=0.5
+ctx.fillStyle=c1;
+var xOff=rx/2;
+var xOffAbs=Math.abs(xOff);
+var xdef=Math.sqrt((xOffAbs/s)+1);
+var s2=s*.9;
+var skewit=(vPi/64)*(rand(2)-1);
+ctx.save();
+if(gen==-1)ctx.globalAlpha=0.2;
+ctx.translate(x,y);
+x=0;
+y=0;
+if(quality=="high" && s > 3)
+{
+niceArc(ctx,x,y,s,r,g,b);
+}
+else
+{
+bell3(x,y,s,c1);
+}
+dots(x,y-1,s);
+ctx.lineWidth=0.5;
+if(lastCpt<6 && animCount<=0 && gen >0){
+ctx.fillText(gen,x,y-120);
+if(lastCpt==1 && gen >0)ctx.fillText("HELP !",x,y-20);
+}
+ctx.font="12pt Arial";
+ctx.fillStyle="black";
+if(name!="")ctx.fillText(name+" "+gen,x,y-20);
+if(rz<0)
+{
+//---- Drawing the eyes !
+rEye=myFloor(s/4);
+drawEye(ctx,x-rEye,y,rEye,s,"white","black",dx,false);
+drawEye(ctx,x+rEye,y,rEye,s,"white","black",dx,true);
+}
+//-------
+ctx.restore();
+}
+
+//-------------------------------
+
+//------the dots on the ladybugs
+
+function dots(x,y,s){
+rSpace=Math.max(s*.55,1);
+var rDiamPt=myFloor(s/7);
+if(rDiamPt<1)rDiamPt=1;
+ctx.save();
+ctx.strokeStyle ="black";
+ctx.fillStyle ="black";
+//x-=(s/2);
+y-=(s/1.5);
+simpleSphere(ctx,x,y-1,rDiamPt,0,0,0,1);
+simpleSphere(ctx,x,y,rDiamPt,0,0,0,1);
+simpleSphere(ctx,x-rSpace,y+rSpace-1,rDiamPt,0,0,0,1);
+simpleSphere(ctx,x-rSpace-1,y+rSpace,rDiamPt,0,0,0,1);
+simpleSphere(ctx,x+rSpace,y+rSpace-1,rDiamPt,0,0,0,1);
+simpleSphere(ctx,x+rSpace+1,y+rSpace,rDiamPt,0,0,0,1);
+ctx.restore();
+
+}
+
+function drawDetect(Pt1,r){
+ptA= pt3Dto2DR(Pt1,r);
+body=ptA.r*2;
+space=10;
+head=myFloor(body/5);
+if(head<1)head=1;
+ctx.lineWidth=head;
+ctx.strokeStyle="orangered";
+ctx.beginPath();
+ctx.moveTo(ptA.x,ptA.y-body-space);
+ctx.lineTo(ptA.x,ptA.y-space);
+ctx.lineTo(ptA.x-head,ptA.y-space-head);
+ctx.moveTo(ptA.x,ptA.y-space);
+ctx.lineTo(ptA.x+head,ptA.y-space-head);
+ctx.closePath();
+ctx.stroke();
+}
+
+//----------/
+
+function drawProtect(Pt1,r){
+ptA= pt3Dto2DR(Pt1,r);
+body=ptA.r*2;
+space=10;
+simpleSphere(ctx,ptA.x,ptA.y,body,0,90,210,.5);
+head=myFloor(body/5);
+if(head<1)head=1;
+ctx.lineWidth=head;
+ctx.strokeStyle="blue";
+ctx.beginPath();
+ctx.moveTo(ptA.x,ptA.y-body-space);
+ctx.lineTo(ptA.x,ptA.y-space);
+ctx.lineTo(ptA.x-head,ptA.y-space-head);
+ctx.moveTo(ptA.x,ptA.y-space);
+ctx.lineTo(ptA.x+head,ptA.y-space-head);
+ctx.closePath();
+ctx.stroke();
+
+}
+//-------------------------------
+function drawFight(Pt1,r){
+ptA= pt3Dto2DR(Pt1,r);
+D=ptA.r*2;
+if(D<step)D=step;
+sphere(ctx,ptA.x,ptA.y,D,215,200,25,0.3);
+}
+
+//-------------------------------
+function detect(myPos,myTarget,myReach){
+matingAge=20;
+var bAGeOk=true;
+var gender=0;
+var bGeneration=true;
+var bGender=false;
+var generation=0;
+var response=-1;
+var bestDist=9000;
+var age=-1;
+var way="";
+var nb=arrMob.length;
+myTarget=myTarget+"&0";
+save=myTarget;
+
+var temp=myTarget.split("&");
+myTarget=temp[0];
+generation=(parseInt(temp[1]));
+
+if(myTarget=="kid"){
+myTarget="ladybug";
+age=matingAge;
+way="under";
+}
+else if(myTarget=="bigbug"){
+myTarget="ladybug";
+age=matingAge;
+way="over";
+}
+else if(myTarget=="malebug"){
+myTarget="ladybug";
+age=matingAge;
+way="over";
+gender=1;
+}
+else if(myTarget=="femalebug"){
+myTarget="ladybug";
+age=matingAge;
+way="over";
+gender=2;
+}
+for (var p = 0; p < nb; p++){
+if(arrMob[p].name==myTarget){
+var d=myFloor(distance(myPos,arrMob[p].pos));
+if(age!=-1){
+if(way=="under") bAGeOk=(age >arrMob[p].life);
+else bAGeOk=(age <= arrMob[p].life);
+}
+//bAGeOk=true;
+//bGender=true;
+bGeneration=(generation == 0 || generation==parseInt(arrMob[p].generation));
+bGender=(gender == 0 || gender==arrMob[p].gender);
+if(d <= myReach && bAGeOk && d < bestDist && bGeneration && bGender)
+{
+bestDist=d;
+response=p;
+}
+}
+}
+//setInfo("replace", "|"+save +"|"+myTarget +" "+response+">"+ age);
+
+return response;
+}
+//-------------------------------
+// OBJECTS --------------------------
+
+// Grass object : the original growing process
+// has been turned to aphid population
+// growth
+function grass(x,y,z,s,n,c1,c2){
+this.name=n;
+this.maxLife=1;
+this.life=0;
+this.gender=0;
+this.generation=0;
+if(c1=="green"){
+red=50;
+if (z<=80)
+green=myFloor(245-z);
+else
+green=myFloor(165-(z-80)/3);
+blue=30;
+this.color="rgba("+red+","+green+","+blue+",0.4)";
+}
+else if(c1=="blue"){
+red=50;
+blue =myFloor(255-(z/2));
+green =30;
+this.color="rgba("+red+","+green+","+blue+",0.6)";
+}
+else this.color=c1;
+if(c2=="none")this.colorTop=c2;
+else this.colorTop=c2;
+this.pos=new Point3D(x,y,z);
+this.r=10;
+xDir=rand(s/6)-(s/12);
+zDir=1;
+this.s=s;
+this.facing=new vector(xDir,s,zDir);
+this.facingEdge=new
+Point3D(this.pos.x+this.facing.x,this.pos.y+this.facing.y,this.pos.z+this.facing.z);
+this.state="quiet";
+
+this.move=function(){
+if(this.facing.y<this.s){
+this.facing.y+=growingSpeed;
+this.facingEdge.y+=growingSpeed;
+}
+//---- This flower can call a mating call to
+// help bug reproduce and survive...
+// Ants could attach this unique and special
+// Flower...
+
+if(this.name=="gold"){
+centerCall=(mobDeaths>=mobBirth);
+}
+//----
+}
+this.draw=function(dummy){
+pt1=pt3Dto2DR(this.pos,this.r);
+pt2=pt3Dto2DR(this.facingEdge,this.r);
+s=focal/(focal+this.pos.z-yCam);
+if(this.facing.y>=1)
+{
+if(this.name=="grass")
+{
+h=pt1.y-pt2.y+1;
+if(h>5)
+drawMeAphids(ctx,pt1.x,pt1.y,"lightgreen",h,s);
+}
+else if(this.name=="violet" || this.name=="gold")
+{
+h=pt1.y-pt2.y+1;
+dx=rand(h/3);
+dy=h/3;
+drawMeAFlower(ctx,pt1.x,pt1.y,dx,dy,"rgba(0,218,92,0.6)",this.color,this.colorTop,h)
+
+}
+}//-- end facing >0
+}//-- end draw
+
+}//-- end grass
+
+// Ant object : they only die thru combat
+function ant(x,y,z,s){
+this.name="ant";
+this.move=step*2;
+this.life=0;
+this.maxLife=20+rand(15);
+this.gender=0;
+this.generation=0;
+this.flying=false;
+this.pos=new Point3D(x,y,z);
+var xDir=rand(this.move*2)-this.move;
+zDir=-this.move;
+this.facing=new vector(xDir,1,zDir);
+this.facingEdge=new
+Point3D(this.pos.x+this.facing.x,this.pos.y+1,this.pos.z+this.facing.z);
+this.s=s;
+this.sightLength=s+1;
+this.power=s;
+this.powerMax=s*1.5;
+this.maxMeals=maxMeals;
+this.meals=maxMeals;
+this.state="quiet";
+this.fate="";
+this.fight=false;
+this.seen=false;
+this.pos2D=new Point2D(x,y);
+this.pos3Dbefore=new Point3D(x,y,z);
+this.taunted=false;
+
+this.hunt=function(){
+booSuccess=false;
+
+if(this.state!="dead"){
+var isKid=false;
+x=this.pos.x;
+z=this.pos.z;
+shots=0;
+var ennemy=-1;
+isHungry=false;
+isAngry=(lastCpt>(2*antNr)||this.taunted)
+if(!isAngry)isHungry=(lastCpt> antNr);
+if(isAngry){ // search only grownup ladybug
+var ennemy=detect(this.pos,"bigbug",this.sightLength);
+}
+else if(isHungry){ // search only kid ladybug
+var ennemy=detect(this.pos,"kid",this.sightLength);
+isKid=true;
+}
+bonus=0;
+if(this.taunted && arrMob[ennemy].canFly)bonus=20;
+this.taunted=false;
+if(ennemy!=-1){ // ennemy detected
+bWin=true;
+if(isKid)
+bWin=((rand(100)+ this.power) > 20);
+else
+bWin=((rand(100)+ this.power - arrMob[ennemy].power-bonus) > 50);
+var strProtect=" ";
+if(arrMob[ennemy].protect)strProtect=" protector ";
+if(bWin){
+booSuccess=true;
+if(isKid){lastMsg=this.name+" killed a kid bug !";
+arrMob[ennemy].state="dead";
+arrMob[ennemy].fate="Killed";
+}
+else if(arrMob[ennemy].gender==1) lastMsg=this.name+" killed a"+strProtect+"mother bug !";
+else lastMsg=this.name+" killed a"+strProtect+"father bug !";
+shots+=1;
+this.meals+=arrMob[ennemy].r/3;
+if(this.meals>this.maxMeals)this.meals=this.maxMeals;
+this.state="quiet";
+this.fight=true;
+this.pos3Dbefore.x=this.pos.x;
+this.pos3Dbefore.y=this.pos.y;
+this.pos3Dbefore.z=this.pos.z;
+
+this.pos.x=arrMob[ennemy].pos.x;
+this.pos.y=arrMob[ennemy].pos.y;
+this.pos.z=arrMob[ennemy].pos.z;
+if(this.power<this.powerMax){
+this.s+=1;
+this.sightLength+=1;
+this.power+=1;
+}
+arrMob[ennemy].state="dead";
+arrMob[ennemy].fate="Killed";
+antKills+=1;
+if(shots>=3)i=arrMob.length-1;
+}
+else
+{
+if(arrMob[ennemy].surname=="")
+arrMob[ennemy].surname=arrMob[ennemy].setName();
+arrMob[ennemy].meals+=this.s;
+arrMob[ennemy].maxLife+=this.s;
+if(arrMob[ennemy].power<this.power)
+arrMob[ennemy].power+=1;
+else
+this.fight=true;
+this.state="dead";
+this.fate="Ant";
+arrMob[ennemy].antKilled+=1;
+antNr-=1;
+sName=arrMob[ennemy].surname;
+strProtect=strProtect+" "+sName;
+lastMsg=this.name+" killed by "+strProtect;
+}
+}
+}
+if(!booSuccess)this.move();
+}
+
+this.move=function(){
+this.pos3Dbefore.x=this.pos.x;
+this.pos3Dbefore.y=this.pos.y;
+this.pos3Dbefore.z=this.pos.z;
+if(this.state!="dead"){
+//this.meals-=5;
+//if(this.meals<0)this.meals=0;
+if(this.pos.y>-homeSize)this.pos.y=-homeSize;
+isAngry=(lastCpt>(2*antNr))
+if(centerCall && isAngry)
+{
+dx=centerPoint.x-this.pos.x;
+dy=centerPoint.y-this.pos.y;
+dz=centerPoint.z-this.pos.z;
+var travel=Math.sqrt(dx*dx+dy*dy+dz*dz);
+travel=this.sightLength/(travel+1);
+if(travel>1){
+travel=1;
+}
+this.facing.x=dx*travel;
+this.facing.y=dy*travel;
+this.facing.z=dz*travel;
+}
+
+if(this.facing.x==0 && this.facing.z==0)
+{
+this.facing.x=rand(2*step)-step;
+this.facing.z=rand(2*step)-step;
+}
+this.facingEdge.x=this.pos.x+this.facing.x;
+this.facingEdge.y=this.pos.y+this.facing.y;
+this.facingEdge.z=this.pos.z+this.facing.z;
+
+this.pos.x=this.facingEdge.x;
+this.pos.z=this.facingEdge.z;
+this.pos.y=this.facingEdge.y;
+
+home.checkBounds(this);
+
+}
+else
+{
+this.pos.y+=(3*step);
+this.facing.y+=(3*step);
+this.facingEdge.x=this.pos.x+this.facing.x;
+this.facingEdge.y=this.pos.y+this.facing.y;
+this.facingEdge.z=this.pos.z+this.facing.z;
+}
+}
+
+this.draw=function(altPos){
+if(isNaN(this.pos.x))this.pos.x=0;
+if(isNaN(this.pos.z))this.pos.z=50;
+if(isNaN(this.pos.y))this.pos.y=-homeSize;
+if(true){
+if(this.fight)
+drawFight(this.pos,this.s);
+if(this.seen)
+drawDetect(this.pos,this.s);}
+drawMeAnAnt(altPos,this.facing,this.s,focal,this.state);
+this.seen=false;
+this.fight=false;
+}
+}
+
+// OBJECT Bug : they have a gender,
+// a life span, a belly to feed :
+// they die from hunger, ant attacks and aging !
+function ladybug(x,y,z,r,gen){
+this.name="ladybug";
+this.surname="";
+this.canFly=false;
+this.maxLife=rand(40)+80;
+this.life=0;
+this.fate="";
+this.fasting=0;
+this.flying=false;
+this.gender=rand(100);
+if(this.gender<50)this.gender=1;
+else this.gender=2;
+this.generation=gen;
+this.power=step;
+if(this.generation==1)
+{
+this.life+=matingAge;
+this.maxLife+=matingAge;
+}
+this.sightLength= step-2;
+this.move=step;
+if(this.gender==2){
+this.color="rgb(210,140,20)";
+this.colorR=210;
+this.colorG=140;
+this.colorB=20;
+}
+else
+{
+this.color="rgb(180,40,20)";
+this.colorR=180;
+this.colorG=40;
+this.colorB=20;
+}
+this.pos=new Point3D(x,y,z);
+this.pos2D=new Point2D(x,y);
+this.pos3Dbefore=new Point2D(x,y,z);
+var xDir=rand(this. move*2)-this.move;
+zDir=rand(this.move*2)-this.move;
+this.facing=new vector(xDir,1,zDir);
+this.facingEdge=new
+Point3D(this.pos.x+this.facing.x,this.pos.y+1,this.pos.z+this.facing.z);
+this.protect=false;
+this.sexAppeal=matingChance;
+this.maxMeals=maxMeals;
+this.meals=maxMeals;
+this.state="quiet";
+this.r=r;
+this.antKilled=0;
+this.aphidsEaten=0;
+this.childrenNr=0;
+this.setSize=function(){
+this.r=Math.min((5+((step*2)*(this.life/matingAge))),(step*2));
+this.r=myFloor(this.r);
+}
+this.setGender=function(g){
+this.gender=g;
+if(this.gender==2){
+this.color="rgb(210,140,20)";
+this.colorR=210;
+this.colorG=140;
+this.colorB=20;
+}
+else
+{
+this.color="rgb(180,40,20)";
+this.colorR=180;
+this.colorG=40;
+this.colorB=20;
+}
+}
+this.getGender=function(){
+if(this.gender==1)return "male";
+else return "female";
+}
+// genes are transmited to descent
+this.setGene=function(g){
+this.gene=g;
+if(this.gene==1)this.sightLength=this.sightLength+geneMulti;
+else if(this.gene==2)this.maxMeals=this.maxMeals+geneMulti;
+else if(this.gene==3)this.sexAppeal=this. sexAppeal+geneMulti;
+else if(this.gene==4)this.canFly=true;
+else this.gene=0;
+}
+this.setPower=function(p){
+this.power=p;
+}
+
+this.setMaxLife=function(f){
+this.maxLife=f;
+}
+this.setName=function(){
+var aName;
+var arrNames=new Array(10);
+arrNames[0]="lol";
+arrNames[1]="pol";
+arrNames[2]="nol";
+arrNames[3]="toni";
+arrNames[4]="mol";
+arrNames[5]="soni";
+arrNames[6]="max";
+arrNames[7]="min";
+arrNames[8]="vi";
+arrNames[9]="tin";
+aName=arrNames[rand(9)];
+if(this.gender==1)
+aName+="o";
+else
+aName+="a";
+return aName;
+}
+this.setSightLength=function(g){
+this.sightLength=g;
+}
+this.setCanFly=function(b){
+this.canFly=b;
+}
+this.setMaxMeals=function(g){
+this.maxMeals=g;
+}
+this.setSexAppeal=function(g){
+this.sexAppeal=g;
+}
+
+this.beware=function(){
+var aSight=this.sightLength;
+if(this.canFly)aSight+=aSight;
+this.protect=false;
+var kid2help=-1;
+if(antState=="hungry"){
+kid2help=detect(this.pos,"kid", aSight);
+}
+this.pos3Dbefore.x=this.pos.x;
+this.pos3Dbefore.y=this.pos.y;
+this.pos3Dbefore.z=this.pos.z;
+y=2*islandy;
+booSuccess=false;
+var ennemy=detect(this.pos,"ant",aSight);
+
+if(ennemy >-1 && kid2help>-1 ){ // flying bugs dont help
+booSuccess=true;
+arrMob[ennemy].seen=true;
+arrMob[ennemy].taunted=true;
+this.pos.x=arrMob[kid2help].x;
+this.pos.z=arrMob[kid2help].z;
+this.pos.y=arrMob[kid2help].y;
+this.protect=true;
+}
+
+else if(ennemy >-1 && !this.canFly ){
+booSuccess=true;
+arrMob[ennemy].seen=true;
+dx=this.pos.x-arrMob[ennemy].pos.x;
+dz=this.pos.z-arrMob[ennemy].pos.z;
+if(Math.abs(dx)<step){
+if(dx<0)dx=-step;
+else dx=step;
+}
+if(Math.abs(dz)<step){
+if(dz<0)dz=-step;
+else dz=step;
+}
+this.facing.x=dx;
+this.facing.z=dz;
+this.facing.y=0;
+this.meals+=1;// very short action, deas not reduce food.
+this.facingEdge.x=this.pos.x+this.facing.x;
+this.facingEdge.z=this.pos.z+this.facing.z;
+this.pos.x=this.facingEdge.x;
+this.pos.z=this.facingEdge.z;
+if(this.canFly && this.meals<huntMeals)
+{
+this.goSafe();
+}
+}
+if(!booSuccess)
+{
+this.mate();
+}
+else this.checkBounds();
+}
+
+this.mate=function(){
+if(this.state!="dead"){
+booSuccess=false;
+if(this.state=="quiet")
+{
+isSeduced=false;
+partner=-1;
+x=this.pos.x;
+z=this.pos.z;
+this.pos.x=this.facingEdge.x;
+this.pos.z=this.facingEdge.z;
+who="malebug";
+if(this.gender==1)who="fe"+who;
+if(lastMaleNr>1 && lastFemaleNr>1)who=who+"&"+this.generation;
+var partner=detect(this.pos,who,this.sightLength);
+if(partner!=-1){
+matingScore=rand(100);
+if(centerCall) matingScore-=3;
+isSeduced=(matingScore<=matingChance);
+}
+if(isSeduced)
+{
+this.giveLife(partner);
+booSuccess=true;
+///------------------------------------
+}
+
+}
+if(!booSuccess)this.hunt();
+else this.checkBounds();
+}
+}
+
+this.giveLife=function(partner){
+///------------------------------------
+this.meals+=3; // help to mating
+this.state="quiet";
+this.facingEdge.x=arrMob[partner].pos.x;
+this.facingEdge.z=arrMob[partner].pos.z;
+
+//-------compute genes
+newSightLength=Math.max(this.sightLength,arrMob[partner].sightLength);
+newMaxMeals=myFloor((this.maxMeals+arrMob[partner].maxMeals)/2);
+newPower=Math.max(this.power,arrMob[partner].power);
+newSexAppeal=myFloor((this.sexAppeal+arrMob[partner].sexAppeal)/2)+(newPower-step);
+newCanFly=(this.canFly && arrMob[partner].canFly);
+if(!newCanFly)
+{
+newCanFly=((this.canFly || arrMob[partner].canFly ) && rand(100)<=50);
+}
+if(!newCanFly)newCanFly=(rand(100)<=25);
+newMaxLife=Math.max(this.maxLife,arrMob[partner].maxLife);
+//------------Debug
+//newCanFly=false;
+//------------Debug
+this.childrenNr+=1;
+arrMob[partner].childrenNr+=1;
+
+this.maxLife+=1;
+arrMob[partner].maxLife+=1;
+if(this.gender==1)
+{
+var fatherName=this.surname;
+var motherName=arrMob[partner].surname;
+}
+else
+{
+var fatherName=arrMob[partner].surname;
+var motherName=this.surname;
+}
+
+mobBirth+=1;
+var x=this.pos.x;
+var y=-homeSize;
+var z=this.pos.z;
+var r=8;
+var gen=this.generation+1;
+lastMsg="new baby bug #"+gen+" !";
+arrMob.push(new ladybug(x,y,z,this.r,gen));
+nb=arrMob.length-1;
+arrMob[nb].setPower(newPower);
+arrMob[nb].setMaxLife(newMaxLife);
+arrMob[nb].setSightLength(newSightLength);
+arrMob[nb].setCanFly(newCanFly);
+arrMob[nb].setMaxMeals(newMaxMeals);
+arrMob[nb].setSexAppeal(newSexAppeal);
+if(arrMob[nb].gender==1){
+if(motherName!="" && fatherName=="")
+fatherName = motherName +"o";
+arrMob[nb].surname=fatherName;}
+else
+{
+
+if(motherName=="" && fatherName!="")
+motherName=fatherName+"a";
+arrMob[nb].surname=motherName;
+
+}
+}
+
+this.protect=function(){
+this.move(); // to be developped
+}
+
+this.flee=function(){
+this.move(); // to be developped
+}
+
+
+this.hunt=function(){
+if(this.state!="dead"){
+booSuccess=false;
+if(this.meals<huntMeals){
+x=this.pos.x;
+z=this.pos.z;
+for (var i = 0; i < arrMob.length; i++){
+if(arrMob[i].name=="grass" || arrMob[i].name=="violet"){
+var isDistance=(distance(arrMob[i].pos,this.pos)<=this.sightLength);
+if(arrMob[i].facing.y>3){
+if(isDistance){
+this.meals+=arrMob[i].facing.y/units4aphid;
+if(this.meals>this.maxMeals)this.meals=this.maxMeals;
+this.aphidsEaten+=arrMob[i].facing.y/units4aphid;
+if(arrMob[i].name=="violet")this.maxLife+=20;
+arrMob[i].facing.y=growReStart;
+arrMob[i].facingEdge.y=this.pos.y;
+this.state="quiet";
+this.pos.x=arrMob[i].pos.x;
+//this.pos.y=arrMob[i].pos.y;
+this.pos.z=arrMob[i].pos.z;
+booSuccess=true;
+this.fasting=0;
+i=arrMob.length-1;
+}}}}
+if(!booSuccess) {this.fasting+=1;}
+}
+if(!booSuccess) {this.move();}
+else this.checkBounds();
+}}
+
+this.goSafe=function(){
+if(this.canFly){
+x=s4*2;
+y=2*islandy;
+this.pos.x=x+rand(step);
+this.pos.y=y;
+this.pos.z=rand(homeSize);
+}
+}
+this.move=function(){
+x=s4*2;
+y=2*islandy;
+
+test=rand(2*this.sightLength);
+if(this.state=="dead")
+;
+else if (this.fasting>3){
+this.facing.x=test;
+this.facing.z=test;
+this.facing.y=0;
+this.facingEdge.x=this.pos.x+this.facing.x;
+this.facingEdge.z=this.pos.z+this.facing.z;
+this.facingEdge.y=0;
+}
+
+if(this.pos.y<-homeSize)this.pos.y=-homeSize;
+
+this.meals-=1;
+if(this.meals<huntMeals)
+{
+if(this.meals<0){
+if(this.fate=="")this.fate="Hunger";
+
+this.state="dead";
+}
+}
+
+else if(centerCall && this.life >= matingAge)
+{
+this.meals+=1;
+dx=centerPoint.x-this.pos.x;
+dy=centerPoint.y-this.pos.y;
+dz=centerPoint.z-this.pos.z;
+var travel=Math.sqrt(dx*dx+dy*dy+dz*dz);
+travel=this.sightLength/(travel+1);
+if(travel>1){
+travel=1;
+}
+this.facing.x=dx*travel;
+this.facing.y=0;
+this.facing.z=dz*travel;
+this.pos.y=-homeSize;
+}
+else{
+this.pos.x=this.facingEdge.x;
+this.pos.z=this.facingEdge.z;
+//this.pos.y=this.facingEdge.y;
+}
+if(this.canFly)
+{
+this.pos.y+=rand(step)+step+step-homeSize;
+//this.facing.y+=(3*step);
+}
+else
+{
+if(antAttack){
+if(this.canFly){
+this.pos.y+=(1*step);
+this.facing.y+=(1*step);
+}
+}
+
+}
+this.checkBounds();
+}
+
+this.checkBounds=function(){
+// Check top & bottom edges :
+home.checkBounds(this);
+}
+
+this.draw=function(altPos){
+ok=true;
+if(isNaN(this.pos.x))ok=false;
+if(isNaN(this.pos.z))ok=false;
+if(isNaN(this.pos.y))ok=false;
+
+if(ok){
+
+if(this.protect)
+drawProtect(this.pos,this.r);
+this.protect=false;
+aPt=pt3Dto2DR(altPos,this.r)
+x=aPt.x;
+y=aPt.y;
+if(x!=-1 && y!=-1){
+if(this.state=="dead")this.generation=-1;
+if(altPos.y==-homeSize || !this.canFly)
+{
+altPos.y=-homeSize;
+drawMeABug(ctx,aPt.x,aPt.y,aPt.r,this.facing.x,this.facing.z,this.color,this.colorR,this.colorG,this.colorB,"black",this.generation,"high",this.surname,this.state);
+
+}
+else
+{
+drawMeAflyingBug(ctx,aPt.x,aPt.y,aPt.r,this.colorR,this.colorG,this.colorB,this.facing.x,this.facing.z,this.generation,this.surname,this.state);
+}
+this.pos2D.x=aPt.x;
+this.pos2D.y=aPt.y;
+}
+}
+else setInfo("replace",this.pos.x+" "+this.pos.y+" "+this.pos.z);
+}
+} // end bug object
+
+
+// home object starts with a cube !
+function Home(size)
+{
+ground="rgba(140,110,50,0.6)";
+
+this.hMin=0;
+this.hMax=0;
+this.wMin=0;
+this.wMax=0;
+this.size=size;
+
+
+this.hsize=this.size/2;
+var s=myFloor(this.hsize);
+var extra=8;
+islandh=0;
+s4=s/3;
+islandy=-20;
+this.matrix=new Array(16);
+this.matrix[0]=new Point3D(-s-extra,-s,-s);
+this.matrix[1]=new Point3D(s+extra,-s,-s);
+this.matrix[2]=new Point3D(s+extra, s,-s);
+this.matrix[3]=new Point3D(-s-extra, s,-s);
+this.matrix[4]=new Point3D(s,-s, s);
+this.matrix[5]=new Point3D(-s,-s, s);
+this.matrix[6]=new Point3D(-s, s, s);
+this.matrix[7]=new Point3D(s, s, s);
+this.matrix[8]=new Point3D(s4,islandy,-s);
+this.matrix[9]=new Point3D(s4,islandy,s);
+this.matrix[10]=new Point3D(s,islandy,-s);
+this.matrix[11]=new Point3D(s,islandy,s);
+
+this.matrix[12]=new Point3D(s4,-s+0,-s);
+this.matrix[13]=new Point3D(s4,-s+0,s);
+this.matrix[14]=new Point3D(s,-s+0,-s);
+this.matrix[15]=new Point3D(s,-s+0,s);
+
+this.faces = new Array(8);
+this.faces[0]=[0,1,2,3,"rgba(0,100,200,0.01)"]; // front
+this.faces[1]=[1,4,7,2,"rgba(0,100,200,0.01)"]; // right
+this.faces[2]=[4,5,6,7,"rgba(100,200,200,0.01)"]; // back
+this.faces[3]=[5,0,3,6,"rgba(230,250,230,0.01)"]; // left
+this.faces[4]=[5,4,1,0,ground]; // Soil
+this.faces[5]=[3,2,7,6,"rgba(200,200,250,0.01)"]; // top
+
+this.faces[6]=[10,8,9,11,ground]; // platform
+this.faces[7]=[14,12,13,15,"rgba(192,144,96,1)"]; // shade
+this.nfaces=8;
+this.lastPt=3;
+
+this.colorOff=4;
+
+//-------
+
+this.checkBounds=function(mob){
+// Check top & bottom edges :
+x=s4*2;
+y=2*islandy;
+mob.flying=(mob.pos.y>-homeSize && mob.pos.y!=y && mob.name!="ant");
+if(mob.flying){
+var wMax=this.wMax*1.4;
+var wMin=this.wMin;
+}
+else
+{
+var wMax=this.wMax;
+var wMin=this.wMin;
+}
+
+if(mob.pos.z>=this.hMax){
+mob.pos.z=this.hMax;
+newStep=rand(mob.sightLength)+ step;
+mob.facing.z=-newStep;
+}
+else if(mob.pos.z<=this.hMin)
+{
+mob.pos.z=this.hMin;
+newStep=rand(this.sightLength)+ step;
+mob.facing.z= newStep;
+}
+//Check left & right edges :
+
+if(mob.pos.x>=wMax){
+mob.pos.x=wMax;
+newStep=rand(mob.sightLength);
+mob.facing.x= - newStep;
+}
+else if(mob.pos.x<=wMin)
+{
+mob.pos.x=wMin;
+newStep=rand(mob.sightLength);
+mob.facing.x= newStep;
+}
+if(mob.facing.x==0 && mob.facing.z==0)
+{
+mob.facing.x=rand(2*step)-step;
+mob.facing.z=rand(2*step)-step;
+}
+
+mob.facingEdge.x=mob.pos.x+mob.facing.x;
+mob.facingEdge.y=mob.pos.y+mob.facing.y;
+mob.facingEdge.z=mob.pos.z+mob.facing.z;
+
+if(mob.pos.y>-homeSize && mob.pos.x < x) mob.pos.y-=step;
+if(mob.pos.y<-homeSize ) mob.pos.y-=-homeSize;
+
+}
+
+
+//----- copy from cache
+this.redraw=function(){
+ctx.clearRect(0,0,scrw,scrh);
+ctx.save();
+ctx.scale(yFactor,yFactor);
+copy(ctxOff, scrw, scrh,ctx,0,0)
+ctx.restore();
+}
+
+//----- first drawing to cache (takes time)
+this.draw=function(){
+ctxOff.clearRect(0,0,scrw,scrh);
+scale=focal/(focal-this.hsize);
+minSize=this.size/scale;
+maxSize=this.size*scale;
+asize=myFloor(maxSize);
+if(true){
+for (var i = 0; i < this.nfaces; i++) // draw a square
+{
+ctxOff.beginPath();
+pt=this.matrix[this.faces[i][0]];
+pt2=pt3Dto2D(pt);
+saveX=pt2.x;
+saveY=pt2.y;
+ctxOff.moveTo(pt2.x,pt2.y);
+for (var j= 1; j <= this.lastPt; j++) {
+pt=this.matrix[this.faces[i][j]];
+pt2=pt3Dto2D(pt);
+ctxOff.lineTo(pt2.x,pt2.y);
+}
+ctxOff.lineTo(saveX,saveY);
+ctxOff.lineWidth = "0.5";
+ctxOff.fillStyle =this.faces[i][this.colorOff];
+ctxOff.closePath();
+ctxOff.fill();
+}
+}
+var sunDiameter=this.size/4;
+var sunOffset=(this.size/4)+10;
+
+simpleSphere(ctxOff,scrw-sunOffset,sunOffset,(sunDiameter+(5*sunOffset)),200,200,0,0.05);
+simpleSphere(ctxOff,scrw-sunOffset,sunOffset,(sunDiameter+(4*sunOffset)),200,200,0,0.1);
+simpleSphere(ctxOff,scrw-sunOffset,sunOffset,(sunDiameter+(3*sunOffset)),200,200,0,0.15);
+simpleSphere(ctxOff,scrw-sunOffset,sunOffset,(sunDiameter+(2*sunOffset)),200,200,0,0.2);
+simpleSphere(ctxOff,scrw-sunOffset,sunOffset,(sunDiameter+sunOffset),200,200,0,0.25);
+sphere(ctxOff,scrw-sunOffset,sunOffset,sunDiameter,200,200,0,1);
+
+aTree=new tree(treeSize,ctxOff,w2,h2*1.4);
+aTree.draw();
+
+aMeadow="rgba(90,180,0,0.7)";
+pt3D=new Point3D(0,0,0);
+pt3D.y=-homeSize;
+grassSpace=(grassSpacing/3);
+for (var i = -homeSize-10; i < homeSize+10; i=i+grassSpace){
+for (var j = 0; j< home.hMax; j=j+grassSpace){
+pt3D.x=i;
+pt3D.z=j;
+pt3D.y=-homeSize;
+pt1=pt3Dto2DR(pt3D, grassSpace*2);
+h=pt1.r;
+dx=rand(5)-2;
+dy=3;
+drawMeAGrass(ctxOff,pt1.x,pt1.y,dx,dy,aMeadow,h);
+if(i>s4*2){
+pt3D.y=2*islandy;
+pt1=pt3Dto2DR(pt3D, grassSpace-3);
+h=pt1.r;
+drawMeAGrass(ctxOff,pt1.x,pt1.y,dx,dy,aMeadow,h);
+}
+}
+}
+
+for (var i = -homeSize-10; i < homeSize+10; i=i+grassSpacing){
+for (var j = 0; j< home.hMax; j=j+grassSpacing){
+// color darker far away
+red=50;
+if (j<=80)
+green=myFloor(245-j);
+else
+green=myFloor(165-(j-80)/3);
+blue=30;
+c="rgba("+red+","+green+","+blue+",0.4)";
+if(i>s4*2){
+green-=80;
+c2="rgba("+red+","+green+","+blue+",0.4)";
+}
+else c2=c;
+h=10;
+arrMob.push(new grass(i,-homeSize,j,h,"grass",c,"none"));
+test=4;
+pt3D.x=i;
+pt3D.z=j;
+pt3D.y=-homeSize;
+pt1=pt3Dto2DR(pt3D, h);
+hscaled =pt1.r;
+if(rand(10)==5)
+drawMeAFlower(ctxOff,pt1.x,pt1.y,5,4,"green","blue","rgba(240,0,125,0.6)",
+hscaled);
+else
+drawMeAGrass(ctxOff,pt1.x,pt1.y,dx,dy,c2, hscaled);
+
+if(i>s4*2){
+y=2*islandy;
+arrMob.push(new grass(i+(test-5),y,j,h,"grass",c,"none"));
+pt3D.x=i;
+pt3D.z=j;
+pt3D.y=y;
+pt1=pt3Dto2DR(pt3D, h);
+hscaled =pt1.r;
+drawMeAGrass(ctxOff,pt1.x,pt1.y,dx,dy,c, hscaled);
+}
+}
+}
+arrMob.push(new grass(5000,-500,-90,3,"grass","green","none"));
+}
+}//----- end home object
+
+//--- Main function
+function init(t){
+turns=0;
+mobDeaths=0;
+mobBirth=0;
+arrFate = new Array(3);
+arrFateNr = new Array(3);
+arrFate[0]="Natural";
+arrFate[1]="Killed";
+arrFate[2]="Hunger";
+antState="quiet";
+for(var x=0;x< arrFateNr.length;x++)
+{
+arrFateNr[x]=0;
+}
+
+if(t==0)
+{
+vcanvas = document.getElementById("universe");
+ctx = vcanvas.getContext("2d");
+vcanOff=document.getElementById("off");
+ctxOff = vcanOff.getContext("2d");
+var screen_width=window.innerWidth;
+var screen_height=window.innerHeight;
+var iphone_3GS=(screen_width==320);
+var iphone_4=(screen_width==640);
+//iphone_3GS=true;
+nbFrames=1;
+
+if(iphone_3GS){
+treeSize=64;
+low=false;
+testLocalStorage=false;
+focal=160;
+homeSize= 160;
+step=12;
+nbMobs=12;
+grassSpacing=32;
+maxMobsDrawn=16;
+antSize= step;
+antNr= nbMobs/2;
+popIso=6;
+gameSpeed=12;
+nbFrames=5;
+}
+else if(iphone_4)
+{
+treeSize=96;
+low=false;
+testLocalStorage=false;
+focal=320;
+homeSize= 320;
+step=12;
+nbMobs=16;
+grassSpacing=32;
+maxMobsDrawn=32;
+antSize=step;
+antNr= nbMobs/2;
+popIso=12;
+gameSpeed=15;
+nbFrames=5;
+}
+else if(screen_height>screen_width)
+{
+low=false;
+testLocalStorage=false;
+focal=(screen_width/2)-20;
+homeSize=focal;
+treeSize=96;
+step=12;
+nbMobs=24;
+grassSpacing=40;
+maxMobsDrawn=48;
+antSize=step;
+antNr= nbMobs/2;
+popIso=18;
+gameSpeed=16;
+nbFrames=5;
+}
+else
+{
+low=false;
+testLocalStorage=true;
+focal=(screen_height/2)-20;
+homeSize=focal;
+treeSize=96;
+step=20;
+nbMobs=24;
+grassSpacing=40;
+maxMobsDrawn=48;
+antSize=step;
+antNr= myFloor(nbMobs/2);
+popIso=18;
+gameSpeed=12;
+nbFrames=5;
+}
+yCam=0;
+yFactor=1;
+nrGenes=5;
+islandh=homeSize/2;
+islandy=-homeSize+islandh*1.4;
+mobsDrawn=0;
+running=true;
+vPi=Math.PI;
+maxMeals=30;
+huntMeals=15;
+lastCpt=10;
+growingSpeed=1;
+growReStart=-10;
+foodAmount=0;
+matingChance=25;
+animChance=1;
+animLength=4;
+animCount=0;
+matingAge=20;
+mobDeaths=0;
+mobBirth=0;
+turns=0;
+mobCpt=0;
+mobFemales=0;
+lastFemaleNr=99;
+centerCall=false;
+centerPoint=new Point3D(0,-homeSize,homeSize/2);
+geneMulti=3;
+antKills=0;
+youngs=0;
+lastMsg="";
+units4aphid=1;
+antAttack=false;
+flyCpt=0;
+BugPower=0;
+AntPower=0;
+BugSight=0;
+BugLife=0;
+
+ctx.font="36pt Arial";
+scale=focal/(focal-(homeSize/2));
+wMax=myFloor((scale*homeSize)+0.5);
+scrw=vcanvas.width=wMax; ///window.innerWidth;
+scrh=vcanvas.height=wMax;//window.innerHeight;
+
+document.getElementById("info").style.width=scrw+"px";
+
+setInfo("replace","Game loading...");
+vcanOff.height=vcanOff.width=wMax;
+w2=scrw/2;
+h2=scrh/2
+ctx.fillStyle="#000000";
+ctx.font="32pt Arial";
+ctx.fillText("Vivarium !",w2-98,150);
+ctx.fill();
+drawMeAflyingBug(ctx,w2,100,20,218,40,40,1,-6,1,"","quiet");
+hTop=0;
+hLeft=0;
+hRight=wMax;
+hBottom=wMax;
+
+
+home=new Home(homeSize);
+
+home.hMin=0;
+home.hMax=wMax;
+home.wMin=-homeSize+5;
+home.wMax=homeSize-5;
+
+camPt=new Point3D(0,-homeSize,0);
+camDir=new vector(0,0,1);
+arrMob = new Array(nbMobs);
+for (var i = 0; i < arrMob.length; i++){
+arrMob[i]=new ladybug((rand(100)-49),-homeSize,(h2-rand(50)),(step*2),1);
+arrMob[i].setGene(i%4);
+}
+
+arrMob.push(new
+grass(0,-homeSize,80,rand(12)+14,"gold","rgba(240,0,0,0.6)","rgba(240,240,0,0.6)"));
+//antNr
+for (var i =0; i < antNr; i++){
+arrMob.push(new ant((rand(100)-50),-homeSize,rand(100),antSize));
+}
+
+home.draw();
+convertCanvasToImage(vcanOff)
+
+}
+else
+{
+
+for (var i = 0; i < nbMobs; i++){
+arrMob.push(new ladybug((rand(100)-49),-homeSize,(h2-rand(50)),(step*2),1));
+//arrMob[i].setGene(i%4);
+}
+}
+
+timer=setInterval("action()",500);
+}
+
+function action(){
+clearInterval(timer);
+timer=setInterval("draw()",5000/gameSpeed);
+}
+
+function help(){
+var nb=arrMob.length;
+gender=1;
+gen=0;
+for (var i = 0; i < nb; i++){
+if(arrMob[i].name=="ladybug"){
+if(arrMob[i].gender==1){
+gender=2;
+}
+gen=arrMob[i].generation;
+i=nb;
+}
+}
+if(gen>0)
+{
+arrMob.push(new ladybug((rand(100)-49),0,(h2-rand(50)),(step*2),gen));
+arrMob[nb].setGene(i%4);
+arrMob[nb].setGender(gender);
+lastCpt=2;
+}
+}
+
+function draw(){
+
+// --- New ants coming ?
+if(true){
+currFrame=(turns%nbFrames)+1;
+if(currFrame==1)
+{
+NewAntNr=0;
+if(antNr<0)antNr=0; // bug !
+var antAttack =(lastCpt>maxMobsDrawn && antNr<3);
+if(antAttack){
+NewAntNr=rand(nbMobs)-antNr;
+if(NewAntNr>0){
+for (var i =0; i < NewAntNr; i++){
+arrMob.push(new ant((rand(100)-50),-homeSize,rand(100),antSize));
+}
+antNr+=NewAntNr;
+}
+}
+// --- Using cpt from previous loop
+if(foodAmount<lastCpt)
+{
+matingChance=0.1;
+}
+else
+{
+matingChance=100*(popIso/lastCpt);
+matingChance=myFloor(matingChance*100)/100;
+if(matingChance>90)matingChance=90;
+}
+if(lastCpt>maxMobsDrawn)matingChance=-1;
+
+var antState="quiet";
+if(antAttack)
+antState="angry";
+else if((lastCpt>(2*antNr)) && antNr>0)
+antState="angry";
+else if((lastCpt>(antNr)) && antNr>0)
+antState="hungry";
+
+// --- AZeroing cpt
+maxGen=0;
+youngs=0;
+mobsDrawn=0;
+foodAmount=0;
+groupHealth=0;
+mobCpt=0;
+mobFemales=0;
+BugSight=0;
+flyCpt=0;
+BugPower=0;
+AntPower=0;
+BugLife=0;
+antNr=1;
+//------------
+
+//------------ Removing the dead from the playground
+nb=arrMob.length-1;
+for (var i = nb; i >=0; i--){
+if(arrMob[i].life>arrMob[i].maxLife){
+arrMob[i].state="dead";
+if(arrMob[i].fate=="")arrMob[i].fate="Natural";
+}
+doSlice=(arrMob[i].state=="dead");
+if(doSlice)
+{
+if(arrMob[i].name=="ladybug"){
+if(arrMob[i].surname!=""){
+lastMsg=arrMob[i].surname+" has gone...";
+}
+for(var x=0;x< arrFateNr.length;x++)
+{
+if(arrMob[i].fate==arrFate[x])arrFateNr[x]+=1;
+}
+mobDeaths+=1;
+}
+
+arrMob.splice(i,1);
+}
+}
+
+
+//----------Looping
+
+var nb=arrMob.length;
+for (var i = 0; i < nb; i++){
+//--------BUGS ----------
+if(arrMob[i].name=="ladybug")
+{
+//--cpt
+if(arrMob[i].state!="dead"){
+if(arrMob[i].generation>maxGen)
+maxGen=arrMob[i].generation;
+if(arrMob[i].canFly)flyCpt+=1;
+if(arrMob[i].power>BugPower) BugPower=arrMob[i].power;
+if(arrMob[i].maxLife>BugLife) BugLife=arrMob[i].maxLife;
+if(arrMob[i].sightLength > BugSight) BugSight=arrMob[i].sightLength;
+arrMob[i].life+=1;
+arrMob[i].setSize();
+groupHealth+=arrMob[i].meals;
+if(arrMob[i].gender==1)
+mobCpt+=1;
+else
+mobFemales+=1;
+if(arrMob[i].life<matingAge) youngs+=1;
+//---- state
+if(this.life>(this.maxLife-3)) arrMob[i].state="dying";
+else if(this.meals<huntMeals)arrMob[i].state="hungry";
+//else if(antState=="hungry")arrMob[i].state="protector";
+//else if(antState=="angry")arrMob[i].state="afraid";
+else arrMob[i].state="quiet";
+}
+
+//names
+if(arrMob[i].antKilled==0 && arrMob[i].surname!="" && arrMob[i].life>40)
+{
+lastMsg=arrMob[i].surname+" has lost its name!";
+arrMob[i].surname="";
+}
+// bugs behavior
+if(arrMob[i].state=="dead") arrMob[i].move();// to heaven !
+else
+arrMob[i].beware();
+}
+
+
+//--------ANTS ----------
+else if(arrMob[i].name=="ant")
+{
+antNr+=1;
+arrMob[i].life+=1;
+if(arrMob[i].power> AntPower) AntPower=arrMob[i].power;
+// Ants behavior
+if(arrMob[i].state!="dead") arrMob[i].state=antState;
+if(arrMob[i].state=="hungry") {arrMob[i].hunt();}
+else if(arrMob[i].state=="angry") {arrMob[i].hunt();}
+else if(arrMob[i].state=="quiet") {
+dices=rand(100)
+if(dices >50)arrMob[i].hunt();
+else
+arrMob[i].move();
+}
+}
+else
+{
+arrMob[i].move();
+if(arrMob[i].facing.y>0)
+foodAmount+=arrMob[i].facing.y/units4aphid;
+}
+} /// end of lopp
+arrMob.sort(sortMobs);
+
+}
+//------------------ actual drawing
+gameDraw(currFrame,nbFrames);
+ctx.fillText(currFrame,10, 30);
+}
+turns+=1;
+}
+
+function reduce(n)
+{
+var yCamNew=yCam+n;
+if (yCamNew > 0)
+yCam = 0;
+else
+yCam=yCamNew;
+yFactor=focal/(focal+yCam);
+}
+
+function enlarge(n)
+{
+var yCamNew=yCam-n;
+if (yCamNew > focal*2)
+yCam = focal*2;
+else
+yCam=yCamNew;
+yFactor=focal/(focal+yCam);
+}
+
+function setInfo(cmd,what)
+{
+str="";
+if(cmd=="add")
+{
+str=document.getElementById("info").innerHTML;
+str=str+"<br>"+what;
+}
+else if(cmd=="replace")
+{
+str=what;
+}
+document.getElementById("info").innerHTML=str;
+}
+function turnAll()
+{
+clearInterval(timer);
+for (var t = 0; t < home.matrix.length; t++)
+{
+matrix[t]=rotateY(matrix[t],30);
+}
+for (var t = 0; t <  arrMob.length; t++)
+{
+arrMob[t].pos=rotateY(arrMob[t].pos,30);
+}
+timer=setInterval("draw()",5000/gameSpeed);
+}
+
+function point_it(event){
+pos_x = event.offsetX?(event.offsetX):event.pageX-document.getElementById("universe").offsetLeft;
+pos_y = event.offsetY?(event.offsetY):event.pageY-document.getElementById("universe").offsetTop;
+
+if(running){
+if(pos_x<30 && pos_y> scrh-40 )
+low=!low;
+else if (pos_y<40)
+{
+if (pos_x<w2) reduce(5); else enlarge(5);
+}
+else
+{
+if(lastCpt==1 || lastFemaleNr==0 || lastMaleNr==0)help();
+else bugInfos(pos_x,pos_y);
+}// end pos top
+}
+else init(1);
+
+}//--end function
+
+function gameDraw(currFrame,nbFrames)
+{
+home.redraw();
+altPos=new Point3D(0,0,0);
+var nb=arrMob.length;
+for (var gm = 0; gm < nb; gm++){
+if((arrMob[gm].name=="ant"        || arrMob[gm].name=="ladybug") &&
+currFrame<nbFrames){
+
+dx=(arrMob[gm].pos.x-arrMob[gm].pos3Dbefore.x)/nbFrames;
+dy=(arrMob[gm].pos.y-arrMob[gm].pos3Dbefore.y)/nbFrames;
+dz=(arrMob[gm].pos.z-arrMob[gm].pos3Dbefore.z)/nbFrames;
+altPos.x=arrMob[gm].pos.x-((nbFrames-currFrame)*dx);
+altPos.y=arrMob[gm].pos.y-((nbFrames-currFrame)*dy);
+altPos.z=arrMob[gm].pos.z-((nbFrames-currFrame)*dz);
+arrMob[gm].draw(altPos);
+}
+
+else arrMob[gm].draw(arrMob[gm].pos);
+}
+showStats();
+}
+
+function pausecomp(millis)
+{
+var date = new Date();
+var curDate = null;
+do { curDate = new Date(); }
+while(curDate-date < millis);
+}
+
+function showStats(){
+
+if(mobFemales+mobCpt==0)
+{
+running=false;
+centerCall= false;
+ctx.fillStyle="darkred";
+ctx.font="32pt Arial";
+msg="GAME OVER !";
+var stringw=ctx.measureText(msg).width;
+
+ctx.fillText(msg,w2-(stringw/2),50);
+ctx.fill();
+setInfo("replace"," GAME OVER ! No bug left in the garden.");
+setInfo("add",mobBirth+" births and "+mobDeaths+" deaths.turns "+turns);
+clearInterval(timer);
+drawMeABug(ctx,w2,100,36,0,-1,"#ffdead",180,80,0,"black",0,"high","","");
+msg="Click to replay !";
+ctx.fillStyle="darkred";
+var stringw=ctx.measureText(msg).width;
+ctx.fillText(msg,w2-(stringw/2),150);
+if(testLocalStorage){
+if (localStorage) {
+var nbBest=localStorage.bugs_bestTurns*1;
+if(nbBest==0)localStorage.bugs_bestTurns=turns;
+localStorage.bugs_turns=turns;
+if(nbBest<turns)localStorage.bugs_bestTurns=turns;
+}
+
+}
+}
+else
+{
+
+growingSpeed=(.5/Math.sqrt(mobFemales+mobCpt));
+if((mobFemales+mobCpt)<13)growingSpeed=0.5;
+growingSpeed=myFloor(growingSpeed*100);
+growingSpeed=growingSpeed/100;
+str=" "+mobCpt+" males in garden ";
+str=str+"with "+mobFemales+" females."
+setInfo("replace",str);
+str=" "+mobBirth+" births/";
+str=str+mobDeaths+" deaths. Health:";
+str=str+myFloor(groupHealth/(mobFemales+mobCpt));
+str=str+" turns "+ myFloor(turns/nbFrames)+". X"+myFloor(yFactor*100)/100;
+setInfo("add",str);
+lastFemaleNr=mobFemales;
+lastMaleNr=mobCpt;
+lastCpt=mobFemales+mobCpt;
+}
+
+var msg="";
+if(lastCpt>maxMobsDrawn && antNr==0)
+{
+msg="Dont step on my shoes !";
+}
+else if(antAttack)
+msg="New Ant attack ! !";
+else if((lastCpt>(2*antNr)) && antNr>0)
+msg="Ants are getting angry !";
+else if((lastCpt>(antNr))&& antNr>0)
+msg="Ants are preying on kids !";
+else if(centerCall)
+msg="Rendez-vous dans le jardin !";
+else
+{
+msg="Bugs feeding on aphids !";
+}
+ctx.fillStyle="rgba(218,109,0,0.7)";
+ctx.font="16pt Arial";
+var stringw=ctx.measureText(msg).width;
+ctx.fillText(msg,w2-(stringw/2),24);
+ctx.fill();
+ctx.font="12pt Arial";
+var stringw=ctx.measureText(lastMsg).width;
+ctx.fillText(lastMsg,w2-(stringw/2),46);
+ctx.fill();
+
+
+ctx.save();
+ctx.font="10pt Arial";
+ctx.fillStyle="green";
+var topMsg=46;
+if(testLocalStorage){
+if (localStorage){
+ctx.fillText("Best",5, topMsg);
+ctx.fillText(localStorage.bugs_bestTurns,60, topMsg);
+}else topMsg=34;
+}
+x=1;
+var msg="Can Fly";
+ctx.fillText(msg,5, topMsg+12*(x+1));
+var msg=flyCpt;
+ctx.fillText(msg,60,topMsg+12*(x+1));
+x+=1;
+var msg="Bug sight";
+ctx.fillText(msg,5, topMsg +12*(x+1));
+var msg= BugSight;
+ctx.fillText(msg,60,topMsg +12*(x+1));
+x+=1;
+var msg="Bug Life";
+ctx.fillText(msg,5, topMsg +12*(x+1));
+var msg= BugLife;
+ctx.fillText(msg,60,topMsg +12*(x+1));
+
+x+=1;
+var msg="Bug pow";
+ctx.fillText(msg,5, topMsg +12*(x+1));
+var msg= myFloor(BugPower);
+ctx.fillText(msg,60,topMsg +12*(x+1));
+
+x+=1;
+var msg="Ant Pow";
+ctx.fillText(msg,5, topMsg +12*(x+1));
+var msg= AntPower;
+ctx.fillText(msg,60,topMsg +12*(x+1));
+x+=1;
+ctx.fillStyle="orangered";
+var msg="Bug|kid";
+ctx.fillText(msg,5, topMsg +12*(x+1));
+var msg= lastCpt+"|"+youngs;
+ctx.fillText(msg,60, topMsg +12*(x+1));
+
+x+=1;
+var msg="Mating";
+ctx.fillText(msg,5, topMsg +12*(x+1));
+var msg= matingChance+" %";
+ctx.fillText(msg,60, topMsg +12*(x+1));
+
+x+=1;
+var msg="Descent";
+ctx.fillText(msg,5, topMsg +12*(x+1));
+var msg=maxGen;
+ctx.fillText(msg,60, topMsg +12*(x+1));
+ctx.fill();
+ctx.fillStyle="darkred";
+
+for(var z=0;z< arrFateNr.length;z++)
+{
+x+=1;
+var msg= arrFate[z];
+ctx.fillText(msg,5, topMsg +12*(x+1));
+var msg= arrFateNr[z];
+ctx.fillText(msg,60, topMsg +12*(x+1));
+}
+ctx.fill();
+ctx.fillStyle="black";
+x+=1;
+
+foodAmount=myFloor(foodAmount);
+var msg="Aphids";
+ctx.fillText(msg,5, topMsg +12*(x+1));
+var msg=foodAmount;
+ctx.fillText(msg,60, topMsg +12*(x+1));
+
+x+=1;
+var msg="Ants";
+ctx.fillText(msg,5, topMsg +12*(x+1));
+var msg= antNr;
+ctx.fillText(msg,60, topMsg +12*(x+1));
+
+ctx.fill();
+ctx.restore();
+
+ctx.fillStyle="black";
+
+if(animCount>0){
+hz4=homeSize/4;
+for(var i=-3;i<7;i++)
+{
+y=h2-rand(60);
+s=rand(8)+8;
+drawMeAButterfly(hz4+10+(i*hz4),y,i,rand(8)-4,"rgba(252,124,0,0.9)","rgba(127,225,230,0.4)",s);
+}
+animCount-=1;
+}
+else
+{
+test=rand(100);
+if(test<=animChance)
+{
+animCount=animLength;
+}
+}
+ctx.fillStyle="green";
+ctx.strokeStyle="green";
+
+}
+
+function playKey(e)
+{
+var keynum=e.keyCode? e.keyCode : e.charCode
+manageCamera(keynum)
+}
+
+function bugInfos(x,y){
+var hitPt=new Point2D(x,y);
+//clearInterval(timer);
+//setinfo("replace","Searching...");
+var nb=arrMob.length;
+for (var i = 0; i < nb; i++){
+if(arrMob[i].name=="ladybug")
+{
+if(distance2D(hitPt,arrMob[i].pos2D)<21)
+{
+var sname=arrMob[i].surname;
+if(sname!="")
+var str=sname+" is a ";
+else
+var str="This bug is a ";
+str+=arrMob[i].getGender();
+str+=" aged "+ arrMob[i].life+" of "+arrMob[i].generation+" generation.";
+str+=" it had "+arrMob[i].childrenNr+" children. ";
+str+=" killed "+arrMob[i].antKilled+" ants.";
+str+="and ate "+myFloor(arrMob[i].aphidsEaten)+" aphids !";
+if(sname=="" && arrMob[i].life<40){
+var vResponse = prompt(str+" give it a name ?","")
+if(vResponse!=null){
+arrMob[i].surname=vResponse;
+}
+}
+else
+alert(str);
+
+//alert("found one");
+i=nb-1;
+}//-----end distance check
+}//-----end ladybug check
+}//-----end loop
+}//----end function
+
+
+function askSpeed(){
+var vResponse = prompt("AChange game speed ?",gameSpeed)
+if(vResponse!=null){
+gameSpeed=parseInt(vResponse);
+clearInterval(timer);
+timer=setInterval("draw()",5000/gameSpeed);
+}
+
+return false;
+
+}
+
+
+function manageCamera(keynum) {
+}
+document.onkeypress=playKey;
+
+</script>
+</head>
+<body onload="init(0);">
+<div id="info" onclick="askSpeed();" style="width: 885px;"> 30 males in garden with 24 females.<br> 37 births/7 deaths. Health:20 turns 23. X1</div>
+<canvas width="885" height="885" id="universe" onclick="point_it(event);"></canvas>
+<canvas width="885" height="885" id="off"></canvas>
+
+
+
+</body></html>

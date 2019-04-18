@@ -1,0 +1,113 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="UTF-8">
+
+<title>Maze</title>
+
+</head>
+
+<body>
+<canvas width="500" height="300" id="c"></canvas>
+<script type="text/javascript">
+// by http://www.sacah.net/
+c=document.getElementById('c'); 
+width=800; 
+height=500; 
+c.width=width; 
+c.height=height; 
+c=c.getContext('2d');
+key=[]; 
+map=[]; 
+map[0]=[1,1,1,1,1,1,1,1,1,1]; 
+map[1]=[1,0,0,1,0,0,0,0,0,1]; 
+map[2]=[1,0,1,1,1,0,1,1,0,1]; 
+map[3]=[1,0,1,0,0,0,0,1,0,1]; 
+map[4]=[1,0,0,0,1,1,1,1,0,1]; 
+map[5]=[1,1,0,1,1,0,0,0,0,1]; 
+map[6]=[1,0,0,1,0,0,1,1,1,1]; 
+map[7]=[1,0,1,1,0,1,1,0,2,1]; 
+map[8]=[1,0,0,1,0,0,0,0,0,1]; 
+map[9]=[1,1,1,1,1,1,1,1,1,1]; 
+posX=1; 
+posY=1; 
+dirX=1; 
+dirY=0; 
+rotateSpeed=0.2; 
+moveSpeed=0.2; 
+planeX=0; 
+planeY=0.56; 
+document.onkeydown=function(e) {key[e.keyCode]=1 } 
+document.onkeyup=function(e) { key[e.keyCode]=0 } 
+function renderScreen() { 
+for(var x=0; x<width; x++) { 
+	var cameraX=2*x/width - 1; 
+	var rayDirX=dirX+planeX*cameraX; 
+	var rayDirY=dirY+planeY*cameraX; 
+	var mapX=Math.floor(posX);
+	var mapY=Math.floor(posY);
+	var deltaDistX=Math.sqrt(1+(rayDirY*rayDirY)/(rayDirX*rayDirX));
+	var deltaDistY=Math.sqrt(1+(rayDirX*rayDirX)/(rayDirY*rayDirY));
+	var hit=0;
+	var stepX=1;
+	var stepY=1;
+	var sideDistX=(mapX+1-posX)*deltaDistX;
+	var sideDistY=(mapY+1-posY)*deltaDistY;
+		if(rayDirX<0) { stepX=-1; sideDistX=(posX-mapX)*deltaDistX; } 
+		if(rayDirY<0) { stepY=-1; sideDistY=(posY-mapY)*deltaDistY; } 
+		while(!hit) { 
+			var side=0; 
+			if(sideDistX<sideDistY) {sideDistX+=deltaDistX; mapX+=stepX;} 
+			else { sideDistY+=deltaDistY; mapY+=stepY; side=1; } 
+		if(map[mapX][mapY]>0) hit=1;}
+		
+		var perpWallDist=(mapY-posY+(1-stepY)/2)/rayDirY; 
+		if(side==0) perpWallDist=(mapX-posX+(1-stepX)/2)/rayDirX; 
+		perpWallDist+=0.01; 
+		var wallHeight=height/perpWallDist; 
+		var drawStart=-wallHeight/2+height/2; 
+		var drawEnd=wallHeight/2+height/2; 
+		c.strokeStyle='rgba('+(Math.floor(wallHeight)-50)+',120,0,0.9)'; 
+		c.beginPath();
+		c.moveTo(x, drawStart);
+		c.lineTo(x, drawEnd);
+		c.stroke(); } //End Loop
+} // End Render
+
+ function handleMovement() {
+ c.clearRect(0,0,width,height);
+ if(key[38]) { // Go ahead
+     // if the cell ahead is open then move (by x and by y)
+	if(map[Math.floor(posX+dirX*moveSpeed)][Math.floor(posY)]=='0') posX+=dirX*moveSpeed;
+	if(map[Math.floor(posX)][Math.floor(posY+dirY*moveSpeed)]=='0') posY+=dirY*moveSpeed; 
+ } 
+ 
+  if(key[40]) { // Go back by Philmageo
+     // if the cell behind is open then move (by x and by y)
+	if(map[Math.floor(posX-dirX*moveSpeed)][Math.floor(posY)]=='0') posX-=dirX*moveSpeed;
+	if(map[Math.floor(posX)][Math.floor(posY-dirY*moveSpeed)]=='0') posY-=dirY*moveSpeed; 
+ } 
+ 
+ if(key[37]) { 
+	oldDirX=dirX; 
+	dirX=dirX*Math.cos(-rotateSpeed)-dirY*Math.sin(-rotateSpeed); 
+	dirY=oldDirX*Math.sin(-rotateSpeed)+dirY*Math.cos(-rotateSpeed); 
+	oldPlaneX=planeX; 
+	planeX=planeX*Math.cos(-rotateSpeed)-planeY*Math.sin(-rotateSpeed); 
+	planeY=oldPlaneX*Math.sin(-rotateSpeed)+planeY*Math.cos(-rotateSpeed); 
+ }
+ 
+ if(key[39]) {
+	oldDirX=dirX; 
+	dirX=dirX*Math.cos(rotateSpeed)-dirY*Math.sin(rotateSpeed); 
+	dirY=oldDirX*Math.sin(rotateSpeed)+dirY*Math.cos(rotateSpeed); 
+	oldPlaneX=planeX; 
+	planeX=planeX*Math.cos(rotateSpeed)-planeY*Math.sin(rotateSpeed); 
+	planeY=oldPlaneX*Math.sin(rotateSpeed)+planeY*Math.cos(rotateSpeed); 
+ 
+ } 
+ renderScreen(); } // End handleMovement
+ 
+ setInterval(handleMovement, 30);
+ 
+</script>
+</body>
+</html>

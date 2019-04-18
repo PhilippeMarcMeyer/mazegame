@@ -1,0 +1,56 @@
+body {
+  font-family: Roboto, Arial, Menlo, Consolas, monospace !important;
+  color: #444;
+}
+#tooSmall{
+	display:none;
+}
+
+#titleZone{
+	margin-bottom: 4px; 
+	font-size: 24px; 
+	color: rgb(109, 143, 164); 
+	font-weight: 900; 
+	display: block;
+}
+
+#message{
+	position:absolute;
+	margin-top:-5px;
+	color: rgb(164, 109 , 143); 
+	font-size :16px;
+	font-weight:900;
+	width:100%;
+	text-align:center;
+}
+
+table
+{
+background-color:#eeeeee;
+}
+
+#dessin {
+position: relative; 
+}
+
+#mini {
+position: relative; 
+}
+
+#action {
+color:black;
+}
+
+.toujourscache {
+position: absolute; 
+left: -1000px;
+visibility:hidden;
+}
+
+.show {
+visibility:visible;
+}
+
+#can {
+ border: 1px solid #000;   
+}
