@@ -6,11 +6,7 @@ var running;
 var smin;
 var aMaze;
 var aPlayer;
-const KEY_UP = 122;//
-const KEY_RIGHT = 100;
-const KEY_LEFT = 113;
-const KEY_DOWN = 115;
-const KEY_FIRE = 102;
+
 var mobs = new Array(8);
 var mobsColors = new Array(8);
 mobsColors[0] = new rgbaColor(200,0,0,0.6);

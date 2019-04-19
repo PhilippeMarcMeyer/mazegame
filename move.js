@@ -1,9 +1,23 @@
+
+const KEY_UP_FR = 122; // Z 
+const KEY_LEFT_FR = 113; // Q 
+const KEY_UP_EN = 119; // W 
+const KEY_LEFT_EN = 97; // A 
+
+const KEY_UP = 119; // W 
+const KEY_LEFT = 97; // A 
+const KEY_RIGHT = 100; //  D
+const KEY_DOWN = 115; // S
+const KEY_FIRE = 32; // space
+
+
+
 function playKey(e) {
     var key = e.which || e.keyCode;
 
-    if (key == KEY_LEFT) manageCamera(KEY_LEFT);
+    if (key == KEY_LEFT_FR || key == KEY_LEFT_EN) manageCamera(KEY_LEFT);
     else if (key == KEY_RIGHT) manageCamera(KEY_RIGHT);
-    else if (key == KEY_UP) manageCamera(KEY_UP);
+    else if (key == KEY_UP_FR || key == KEY_UP_EN) manageCamera(KEY_UP);
     else if (key == KEY_DOWN) manageCamera(KEY_DOWN);
     else if (key == KEY_FIRE) manageCamera(KEY_FIRE);
 } 
