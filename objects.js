@@ -101,6 +101,7 @@ function ActionBar(ctx2, nr, sbarH) {
                     if (aMaze.arr[curCell].y > 0) {
                         nextCell = curCell - aMaze.nbH;
                         aPlayer.playerPos = nextCell;
+                        if(aMaze.arr[curCell].wallUp != undefined ) aMaze.arr[curCell].wallUp = 0;
                     }
                 }
                 else if (facing == KEY_RIGHT) {
@@ -108,7 +109,8 @@ function ActionBar(ctx2, nr, sbarH) {
 
                     if (aMaze.arr[curCell].x < aMaze.nbH - 1) {
                         aPlayer.playerPos = nextCell;
-
+                        curCell.wallRight = 0;
+                        if(aMaze.arr[curCell].wallRight != undefined ) aMaze.arr[curCell].wallRight = 0;
                     }
                 }
                 else if (facing == KEY_LEFT) {
@@ -116,20 +118,21 @@ function ActionBar(ctx2, nr, sbarH) {
                     nextCell = curCell - 1;
                     if (aMaze.arr[curCell].x != 0)
                         aPlayer.playerPos = nextCell;
-
+                        if(aMaze.arr[curCell].wallLeft != undefined ) aMaze.arr[curCell].wallLeft = 0;
                 }
                 else if (facing == KEY_DOWN) {
                     nextCell = curCell + aMaze.nbH;
                     if (nextCell < aMaze.nrCells)
                         aPlayer.playerPos = nextCell;
+                        if(aMaze.arr[curCell].wallDown != undefined ) aMaze.arr[curCell].wallDown = 0;
 
                 }
                 if (curCell != aPlayer.playerPos) {
-
+/*
                     var aMobReach = Math.max(curCell, Math.floor(aMaze.nrCells / 3));
                     i = mobs.length + 1;
                     mobs.push(new mob(curCell, i, aMobReach, aMaze.ctx, aMaze, "shadow", 5 + i));
-
+*/
                 }
                 aMaze.Draw();
                 if (aMaze.arr[aPlayer.playerPos].usage == 'end') {
@@ -556,7 +559,6 @@ function genMazeObj(x, y, ctx, margin, wallLength) {
                     this.arr[k].wallDown = 1;
                 }
 
-
             }
 
         }
@@ -611,7 +613,6 @@ function genMazeObj(x, y, ctx, margin, wallLength) {
                 this.arr[k].setUsage(offset);
             }
         }
-
     } // end fct
 
     this.Draw = function () {
@@ -631,7 +632,7 @@ function genMazeObj(x, y, ctx, margin, wallLength) {
             myDrawUsage(this.ctx, this.arr[i].usage, this.arr[i].x, this.arr[i].y, this.wallLength, this.nbH, this.nbV, this.margin, this.arr[i].usageNr);
 
         for (i = 0; i < this.nrCells; i++) {
-            if (this.arr[i].wallRight == 1) // fermÃ©
+            if (this.arr[i].wallRight == 1) // fermé
             {
                 myDrawSign(this.ctx, 'd', this.arr[i].x, this.arr[i].y, this.wallLength, this.nbH, this.nbV, this.margin);
             }
@@ -661,10 +662,7 @@ function genMazeObj(x, y, ctx, margin, wallLength) {
         drawLevel();
         //gameLevel
     }
-
-
 }//end object
-
 
 function player(cell, move, ctx, maze) {
     this.playerPos = cell;
@@ -906,10 +904,12 @@ function MoveMobs() {
         var offset = 1;
         for (j = 0; j < i; j++) {
             if (mobs[i].pos == mobs[j].pos && mobs[j].mood != "dead") {//meme position
+                if (arrFind) {
+                    if (offset < mobs.length)
+                        mobs[i].pos = arrFind.indexOf(offset);
+                    else mobs[i].mood = "dead";
+                }
 
-                if (offset < mobs.length)
-                    mobs[i].pos = arrFind.indexOf(offset);
-                else mobs[i].mood = "dead";
             }
         }
     }

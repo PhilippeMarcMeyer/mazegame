@@ -63,7 +63,11 @@ function genMaze(x, y, nrMobs) {
 
     doCount();
 }
-
+function shuffle(){
+    if(running){
+    aMaze.generate(aPlayer.playerPos);
+    }
+    }
 
 function doit() {
     var booLandScape = true;
