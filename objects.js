@@ -904,9 +904,9 @@ function MoveMobs() {
         var offset = 1;
         for (j = 0; j < i; j++) {
             if (mobs[i].pos == mobs[j].pos && mobs[j].mood != "dead") {//meme position
-                if (arrFind) {
+                if (mobs[i].arrFind) {
                     if (offset < mobs.length)
-                        mobs[i].pos = arrFind.indexOf(offset);
+                        mobs[i].pos = mobs[i].arrFind.indexOf(offset);
                     else mobs[i].mood = "dead";
                 }
 
