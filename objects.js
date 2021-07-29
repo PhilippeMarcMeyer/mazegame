@@ -794,25 +794,6 @@ function player(cell, move, ctx, maze) {
         var drawEyeSW = (facing == KEY_DOWN || facing == KEY_LEFT);
         var drawEyeSE = (facing == KEY_DOWN || facing == KEY_RIGHT);
 
-        /*
-        ctx.save();
-        ctx.beginPath();
-        ctx.fillStyle="black";
-        ctx.fillStyle=this.color;
-        ctx.arc(left,top,len2,0,2*Math.PI);
-        ctx.stroke();
-        ctx.fill();
-        ctx.closePath();
-        ctx.restore();
-        ctx.save();
-        ctx.beginPath();
-        ctx.lineWidth=2;
-        ctx.strokeStyle="white";
-        ctx.arc(left,top,len2,0,(2-this.frozeAgain/5)*Math.PI);
-        ctx.stroke();
-        ctx.restore();
-        */
-
         sphere(ctx, left, top, len2, this.color.r, this.color.g, this.color.b, this.color.t);
 
         if (this.facing == KEY_FIRE) {
